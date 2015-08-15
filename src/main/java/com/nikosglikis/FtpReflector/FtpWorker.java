@@ -86,7 +86,6 @@ public class FtpWorker  extends Thread
         }
         catch (Exception e)
         {
-            //e.printStackTrace();
             die(ftpFile);
         }
         //TODO download file
