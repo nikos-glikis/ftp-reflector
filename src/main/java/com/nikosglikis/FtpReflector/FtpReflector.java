@@ -66,12 +66,10 @@ public class FtpReflector
                     while (true) {
                         int workersCount = getWorkersCountAndRemoveIdle();
                         System.out.print("\rAlive workers: " + workersCount);
-
-                        Thread.sleep(5000);
+                        Thread.sleep(30000);
                         ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
                         workers.add(ftpWorker);
                         ftpWorker.start();
-
                     }
                 }
             }

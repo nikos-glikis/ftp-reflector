@@ -5,11 +5,11 @@ import it.sauronsoftware.ftp4j.FTPFile;
 
 import java.io.File;
 
-/**
- * Created by User on 15/8/2015.
- */
 public class FtpWorker  extends Thread
 {
+
+    //TODO add path in command line
+    //TODO maximum threads
     static final ListManager listManager = new ListManager();
     public String username;
     public String host;
@@ -70,14 +70,15 @@ public class FtpWorker  extends Thread
                 die(ftpFile);
             }
             File destinationFile =  new File(outputDirectory+"/"+host+"/"+ftpFile.getPath() );
+            //TODO date check
             if (destinationFile.exists()) {
-                if (destinationFile.length() != ftpClient.fileSize(ftpFile.getPath()) ) {
+                if (destinationFile.length() != ftpClient.fileSize(ftpFile.getPath())) {
                     System.out.println("Different size, redownloading: " + ftpFile.getPath());
                     ftpClient.download(ftpFile.getPath(), destinationFile);
                 }
+            } else {
+                ftpClient.download(ftpFile.getPath(), destinationFile);
             }
-
-
         }
         catch (Exception e)
         {
