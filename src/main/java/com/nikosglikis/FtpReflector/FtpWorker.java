@@ -8,6 +8,8 @@ import java.io.File;
 public class FtpWorker  extends Thread
 {
 
+    public static final int STATUS_IDLE = 1;
+    public static final int STATUS_DOWNLOADING = 2;
     //TODO add path in command line
     //TODO maximum threads
     static final ListManager listManager = new ListManager();
@@ -18,6 +20,8 @@ public class FtpWorker  extends Thread
     public FTPClient ftpClient = new FTPClient();
     public boolean verbose = true;
     public boolean active = true;
+    public int status = FtpWorker.STATUS_IDLE;
+    private int nullProcessableCounter = 0;
     public FtpWorker(String host, String username, String password, String outputDirectory)
     {
         this.host = host;
@@ -74,18 +78,32 @@ public class FtpWorker  extends Thread
             if (destinationFile.exists()) {
                 if (destinationFile.length() != ftpClient.fileSize(ftpFile.getPath())) {
                     System.out.println("Different size, redownloading: " + ftpFile.getPath());
-                    ftpClient.download(ftpFile.getPath(), destinationFile);
+                    downloadFile(ftpFile, destinationFile);
                 }
             } else {
-                ftpClient.download(ftpFile.getPath(), destinationFile);
+                ftpClient.downloadFile(ftpFile, destinationFile);
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            //e.printStackTrace();
             die(ftpFile);
         }
         //TODO download file
+    }
+
+    public void downloadFile(FtpFile ftpFile, File destinationFile)
+    {
+        try
+        {
+            setStatusDownloading();
+            ftpClient.download(ftpFile.getPath(), destinationFile);
+            setStatusIdle();
+        }
+        catch (Exception e)
+        {
+            die(ftpFile);
+        }
     }
 
     public void die(Processable processable)
@@ -169,16 +187,28 @@ public class FtpWorker  extends Thread
                     ftpClient.disconnect(true);
                     return;
                 }
-                if (!ftpClient.isConnected()) {
+                if (!ftpClient.isConnected())
+                {
                     die();
                     return;
                 }
 
                 Processable processable = listManager.getNext();
-                if (processable == null ) {
+                if (processable == null )
+                {
+                    if (nullProcessableCounter++ > 10)
+                    {
+                        //TODO die gracefully.
+                        System.out.println("\nNull Processable, queue empty ?");
+                        die();
+                    }
                     System.out.print("n");
-                    sleep(1000);
+                    sleep(30000);
                     continue;
+                }
+                else
+                {
+                    nullProcessableCounter=0;
                 }
                 process(processable);
             }
@@ -214,5 +244,20 @@ public class FtpWorker  extends Thread
             //TODO handle bad password
             return false;
         }
+    }
+
+    public int getStatus()
+    {
+        return status;
+    }
+
+    public void setStatusIdle()
+    {
+        status = FtpWorker.STATUS_IDLE;
+    }
+
+    public void setStatusDownloading()
+    {
+        status = FtpWorker.STATUS_DOWNLOADING;
     }
 }
