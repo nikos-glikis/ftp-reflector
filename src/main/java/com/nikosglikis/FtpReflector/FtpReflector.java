@@ -6,10 +6,9 @@ import it.sauronsoftware.ftp4j.FTPFile;
 import java.util.ArrayList;
 import java.util.Vector;
 
-/**
- * Created by User on 15/8/2015.
- */
-
+//TODO add path in command line
+//TODO maximum threads
+//TODO detect end of files and exit.
 public class FtpReflector
 {
     static ArrayList<FtpWorker> workers = new ArrayList<FtpWorker>();
@@ -20,7 +19,6 @@ public class FtpReflector
 
         try
         {
-
             if (args.length != 3)
             {
                 System.err.println("Usage: java -cp build/:lib/ftp4j-1.7.2.jar com.nikosglikis.FtpReflector.FtpReflector " + "<IpAddress> <UserName> <Password>");
@@ -65,10 +63,12 @@ public class FtpReflector
                     while (true) {
                         int workersCount = getWorkersCountAndRemoveIdle();
                         System.out.print("\rAlive workers: " + workersCount);
-                        Thread.sleep(30000);
+
                         ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
                         workers.add(ftpWorker);
                         ftpWorker.start();
+                        System.out.println("Pending files: "+ftpWorker.listManager.getPendingCount());
+                        Thread.sleep(30000);
                     }
                 }
             }
@@ -119,52 +119,5 @@ public class FtpReflector
         }
 
         return counter;
-    }
-
-    static public void listFilesFtpFiles(FTPClient ftpClient, String path)
-    {
-        try
-        {
-            System.out.println(path);
-            ftpClient.changeDirectory(path);
-            Vector<String> directories = new Vector<String>();
-            /* List all file inside the directory */
-            FTPFile[] fileArray = ftpClient.list();
-
-            for (int i = 0; i < fileArray.length; i++)
-            {
-                FTPFile file = fileArray[i];
-                if (file != null)
-                {
-                    if (file.getType() == FTPFile.TYPE_FILE) // File
-                    {
-                        System.out.println(path+"/"+file.getName());
-
-                        //System.out.println("File Name = " + file.getName() + " ; File Size = " + file.getSize()
-                          //      + " ;Modified Date = " + file.getModifiedDate());
-                    }
-                    else if (file.getType()== FTPFile.TYPE_DIRECTORY) // Directory
-                    {
-                        directories.add(path + "/" + file.getName());
-
-                        //System.out.println("Directory Name = " + file.getName() + " ; Directory Size = " + file.getSize() + " ;Modified Date = " + file.getModifiedDate());
-                    }
-                    else if (file.getType() == FTPFile.TYPE_LINK) // Link
-                    {
-                        System.out.println("Link Name = " + file.getName() + " ;Modified Date = "
-                                + file.getModifiedDate());
-                    }
-                }
-
-            }
-            for (int  i = 0 ; i<directories.size(); i++)
-            {
-                listFilesFtpFiles(ftpClient, directories.get(i));
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
     }
 }

@@ -10,8 +10,7 @@ public class FtpWorker  extends Thread
 
     public static final int STATUS_IDLE = 1;
     public static final int STATUS_DOWNLOADING = 2;
-    //TODO add path in command line
-    //TODO maximum threads
+
     static final ListManager listManager = new ListManager();
     public String username;
     public String host;

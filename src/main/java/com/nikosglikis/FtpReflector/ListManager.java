@@ -3,9 +3,6 @@ package com.nikosglikis.FtpReflector;
 import java.util.Stack;
 import java.util.Vector;
 
-/**
- * Created by User on 15/8/2015.
- */
 public class ListManager
 {
     private Stack<Processable> toBeProcessed = new Stack<Processable>();
@@ -44,5 +41,10 @@ public class ListManager
             e.printStackTrace();
         }
         return null;
+    }
+
+    public int getPendingCount()
+    {
+        return toBeProcessed.size();
     }
 }
