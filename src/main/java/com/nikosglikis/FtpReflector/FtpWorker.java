@@ -81,7 +81,7 @@ public class FtpWorker  extends Thread
                     downloadFile(ftpFile, destinationFile);
                 }
             } else {
-                ftpClient.downloadFile(ftpFile, destinationFile);
+                downloadFile(ftpFile, destinationFile);
             }
         }
         catch (Exception e)
