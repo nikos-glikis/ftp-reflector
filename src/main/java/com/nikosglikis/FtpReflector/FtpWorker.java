@@ -3,6 +3,8 @@ package com.nikosglikis.FtpReflector;
 import it.sauronsoftware.ftp4j.FTPClient;
 import it.sauronsoftware.ftp4j.FTPFile;
 
+import java.io.File;
+
 /**
  * Created by User on 15/8/2015.
  */
@@ -12,22 +14,24 @@ public class FtpWorker  extends Thread
     public String username;
     public String host;
     public String password;
+    public String outputDirectory;
     public FTPClient ftpClient = new FTPClient();
     public boolean verbose = true;
     public boolean active = true;
-    public FtpWorker(String host, String username, String password)
+    public FtpWorker(String host, String username, String password, String outputDirectory)
     {
         this.host = host;
         this.username = username;
         this.password = password;
+        this.outputDirectory = outputDirectory;
         if (!connect()) {
             active = false;
         }
     }
 
-    public FtpWorker(String host, String username, String password, boolean verbose)
+    public FtpWorker(String host, String username, String password, String outputDirectory, boolean verbose)
     {
-        this(host, username, password);
+        this(host, username, password, outputDirectory);
         this.verbose  = verbose;
     }
 
@@ -50,6 +54,14 @@ public class FtpWorker  extends Thread
         }
     }
 
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public void processFile(FtpFile ftpFile)
     {
         try
@@ -57,6 +69,15 @@ public class FtpWorker  extends Thread
             if (!ftpClient.isConnected()) {
                 die(ftpFile);
             }
+            File destinationFile =  new File(outputDirectory+"/"+host+"/"+ftpFile.getPath() );
+            if (destinationFile.exists()) {
+                if (destinationFile.length() != ftpClient.fileSize(ftpFile.getPath()) ) {
+                    System.out.println("Different size, redownloading: " + ftpFile.getPath());
+                    ftpClient.download(ftpFile.getPath(), destinationFile);
+                }
+            }
+
+
         }
         catch (Exception e)
         {
@@ -94,6 +115,9 @@ public class FtpWorker  extends Thread
         try
         {
             String path = directory.getPath();
+            File f = new File(outputDirectory+"/"+host+"/"+directory.getPath());
+
+            f.mkdirs();
 
             if (!ftpClient.isConnected()) {
                 die(directory);
@@ -127,19 +151,9 @@ public class FtpWorker  extends Thread
         }
         catch (Exception e)
         {
-
-            try
-            {
-                e.printStackTrace();
-                //System.out.println(e);
-                System.out.println("Got error, diconnecting ftp client");
-                die(directory);
-            }
-            catch (Exception ee)
-            {
-                //e.printStackTrace();
-            }
-
+            //e.printStackTrace();
+            //System.out.println("Got error, diconnecting ftp client");
+            die(directory);
         }
     }
 
@@ -150,12 +164,12 @@ public class FtpWorker  extends Thread
             while (true)
             {
                 if (!active) {
-                    System.out.println("Thread is not active, return");
+                    //System.out.println("Thread is not active, return");
                     ftpClient.disconnect(true);
                     return;
                 }
                 if (!ftpClient.isConnected()) {
-                    ftpClient.disconnect(true);
+                    die();
                     return;
                 }
 
@@ -178,7 +192,7 @@ public class FtpWorker  extends Thread
             {
 
             }
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -188,11 +202,14 @@ public class FtpWorker  extends Thread
         {
             ftpClient.connect(host);
             ftpClient.login(username, password);
+            ftpClient.setType(FTPClient.TYPE_BINARY);
             return true;
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            //System.out.println("Cannot connect, thread dying");
+            die();
+            //e.printStackTrace();
             //TODO handle bad password
             return false;
         }

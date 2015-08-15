@@ -3,6 +3,7 @@ package com.nikosglikis.FtpReflector;
 import it.sauronsoftware.ftp4j.FTPClient;
 import it.sauronsoftware.ftp4j.FTPFile;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 /**
@@ -11,11 +12,15 @@ import java.util.Vector;
 
 public class FtpReflector
 {
+    static ArrayList<FtpWorker> workers = new ArrayList<FtpWorker>();
+    static boolean verbose = false;
+    static String outputDirectory = "output";
     public static void main(String args[])
     {
-        boolean verbose = true;
+
         try
         {
+
             if (args.length != 3)
             {
                 System.err.println("Usage: java FTP_ListFiles " + "<IpAddress> <UserName> <Password>");
@@ -49,19 +54,24 @@ public class FtpReflector
                 if (client != null)
                 {
                     client.disconnect(true);
-                    FtpWorker ftpWorker = new FtpWorker(ipAddress, userName, password, verbose );
+                    FtpWorker ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
                     ftpWorker.processDirectory(new FtpDirectory(""));
                     ftpWorker.ftpClient.disconnect(true);
                     for (int i = 0 ; i < 10; i++) {
                         Thread.sleep(100);
-                        ftpWorker = new FtpWorker(ipAddress, userName, password, verbose );
+                        ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
                         ftpWorker.start();
+                        workers.add(ftpWorker);
                     }
                     while (true) {
+                        int workersCount = getWorkersCountAndRemoveIdle();
+                        System.out.print("\rAlive workers: " + workersCount);
 
-                        Thread.sleep(10000);
-                        ftpWorker = new FtpWorker(ipAddress, userName, password, verbose );
+                        Thread.sleep(5000);
+                        ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
+                        workers.add(ftpWorker);
                         ftpWorker.start();
+
                     }
                 }
             }
@@ -88,6 +98,30 @@ public class FtpReflector
         {
             e.printStackTrace();
         }
+    }
+
+    static public int getWorkersCountAndRemoveIdle()
+    {
+        int counter=0;
+        ArrayList<FtpWorker> idleWorkers = new ArrayList<FtpWorker>();
+        for (FtpWorker worker : workers)
+        {
+            if (!worker.isActive())
+            {
+                idleWorkers.add(worker);
+            }
+            else
+            {
+                counter++;
+            }
+        }
+
+        for (FtpWorker worker : idleWorkers)
+        {
+            workers.remove(worker);
+        }
+
+        return counter;
     }
 
     static public void listFilesFtpFiles(FTPClient ftpClient, String path)
