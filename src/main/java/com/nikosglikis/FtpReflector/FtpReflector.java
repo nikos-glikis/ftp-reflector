@@ -62,9 +62,6 @@ public class FtpReflector
                         workers.add(ftpWorker);
                     }
                     while (true) {
-
-
-
                         int workersCount = getWorkersCountAndRemoveIdle();
                         if (workersCount < threadLimit) {
                             ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
