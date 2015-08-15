@@ -14,12 +14,15 @@ public class FtpWorker  extends Thread
     public String password;
     public FTPClient ftpClient = new FTPClient();
     public boolean verbose = true;
+    public boolean active = true;
     public FtpWorker(String host, String username, String password)
     {
         this.host = host;
         this.username = username;
         this.password = password;
-        connect();
+        if (!connect()) {
+            active = false;
+        }
     }
 
     public FtpWorker(String host, String username, String password, boolean verbose)
@@ -49,7 +52,41 @@ public class FtpWorker  extends Thread
 
     public void processFile(FtpFile ftpFile)
     {
+        try
+        {
+            if (!ftpClient.isConnected()) {
+                die(ftpFile);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            die(ftpFile);
+        }
         //TODO download file
+    }
+
+    public void die(Processable processable)
+    {
+        if (processable.getType() == Processable.TYPES_DIRECTORY) {
+            listManager.addDirectory(processable.getPath());
+        } else {
+            listManager.addFile(processable.getPath());
+        }
+        die();
+    }
+
+    public void die()
+    {
+        try
+        {
+            ftpClient.disconnect(true);
+        }
+        catch (Exception e)
+        {
+
+        }
+        active = false;
     }
 
     public void processDirectory(FtpDirectory directory)
@@ -57,15 +94,11 @@ public class FtpWorker  extends Thread
         try
         {
             String path = directory.getPath();
+
             if (!ftpClient.isConnected()) {
-                try {
-                    ftpClient.connect(host);
-                    ftpClient.login(username, password);
-                } catch (Exception e) {
-                    System.out.print("e");
-                    processDirectory(directory);
-                }
+                die(directory);
             }
+
             ftpClient.changeDirectory(path);
 
             FTPFile[] fileArray = ftpClient.list();
@@ -100,7 +133,7 @@ public class FtpWorker  extends Thread
                 e.printStackTrace();
                 //System.out.println(e);
                 System.out.println("Got error, diconnecting ftp client");
-                ftpClient.disconnect(true);
+                die(directory);
             }
             catch (Exception ee)
             {
@@ -116,6 +149,15 @@ public class FtpWorker  extends Thread
         {
             while (true)
             {
+                if (!active) {
+                    System.out.println("Thread is not active, return");
+                    ftpClient.disconnect(true);
+                    return;
+                }
+                if (!ftpClient.isConnected()) {
+                    ftpClient.disconnect(true);
+                    return;
+                }
 
                 Processable processable = listManager.getNext();
                 if (processable == null ) {
@@ -128,6 +170,14 @@ public class FtpWorker  extends Thread
         }
         catch (Exception e)
         {
+            try
+            {
+                ftpClient.disconnect(true);
+            }
+            catch (Exception ee)
+            {
+
+            }
             e.printStackTrace();
         }
     }

@@ -13,6 +13,7 @@ public class FtpReflector
 {
     public static void main(String args[])
     {
+        boolean verbose = true;
         try
         {
             if (args.length != 3)
@@ -29,7 +30,7 @@ public class FtpReflector
 
             System.out.println("Ip Address = " + ipAddress);
             System.out.println("User = " + userName);
-            //System.out.println("Pass = " + password);
+
 
             // FTP Program operations start from here
             FTPClient client = null;
@@ -48,21 +49,25 @@ public class FtpReflector
                 if (client != null)
                 {
                     client.disconnect(true);
-                    FtpWorker ftpWorker = new FtpWorker(ipAddress, userName, password, false);
+                    FtpWorker ftpWorker = new FtpWorker(ipAddress, userName, password, verbose );
                     ftpWorker.processDirectory(new FtpDirectory(""));
                     ftpWorker.ftpClient.disconnect(true);
-                    for (int i = 0 ; i < 25; i++) {
+                    for (int i = 0 ; i < 10; i++) {
                         Thread.sleep(100);
-                        ftpWorker = new FtpWorker(ipAddress, userName, password, false);
+                        ftpWorker = new FtpWorker(ipAddress, userName, password, verbose );
                         ftpWorker.start();
                     }
+                    while (true) {
 
-                    //listFilesFtpFiles(client, "");
+                        Thread.sleep(10000);
+                        ftpWorker = new FtpWorker(ipAddress, userName, password, verbose );
+                        ftpWorker.start();
+                    }
                 }
             }
             catch (Exception e)
             {
-                System.err.println("ERROR : Error in Connecting to Remote Machine... Hence exitting...");
+                System.err.println("ERROR : Error in Connecting to Remote Machine... Hence exiting...");
                 e.printStackTrace();
                 System.exit(2);
             }
