@@ -23,8 +23,7 @@ public class FtpReflector
 
             if (args.length != 3)
             {
-                System.err.println("Usage: java FTP_ListFiles " + "<IpAddress> <UserName> <Password>");
-                System.err.println("Example: java FTP_ListFiles 1.2.3.4 other other");
+                System.err.println("Usage: java -cp build/:lib/ftp4j-1.7.2.jar com.nikosglikis.FtpReflector.FtpReflector " + "<IpAddress> <UserName> <Password>");
                 System.exit(1);
             }
 
@@ -75,7 +74,7 @@ public class FtpReflector
             }
             catch (Exception e)
             {
-                System.err.println("ERROR : Error in Connecting to Remote Machine... Hence exiting...");
+                System.err.println("ERROR : Error in Connecting to Remote Machine. Exception information below: ");
                 e.printStackTrace();
                 System.exit(2);
             }
@@ -90,7 +89,7 @@ public class FtpReflector
                     e.printStackTrace();
                 }
             }
-            //System.exit(0);
+            System.exit(0);
         }
         catch (Exception e)
         {
