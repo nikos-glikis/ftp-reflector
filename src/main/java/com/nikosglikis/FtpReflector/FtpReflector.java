@@ -54,19 +54,24 @@ public class FtpReflector
                     FtpWorker ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
                     ftpWorker.processDirectory(new FtpDirectory(""));
                     ftpWorker.ftpClient.disconnect(true);
-                    for (int i = 0 ; i < 10; i++) {
+                    int threadLimit = 15;
+                    for (int i = 0 ; i < threadLimit; i++) {
                         Thread.sleep(100);
                         ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
                         ftpWorker.start();
                         workers.add(ftpWorker);
                     }
                     while (true) {
-                        int workersCount = getWorkersCountAndRemoveIdle();
-                        System.out.print("\rAlive workers: " + workersCount);
 
-                        ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
-                        workers.add(ftpWorker);
-                        ftpWorker.start();
+
+
+                        int workersCount = getWorkersCountAndRemoveIdle();
+                        if (workersCount < threadLimit) {
+                            ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
+                            ftpWorker.start();
+                            workers.add(ftpWorker);
+                        }
+                        System.out.println("Alive workers: " + workersCount);
                         System.out.println("Pending files: "+ftpWorker.listManager.getPendingCount());
                         Thread.sleep(30000);
                     }

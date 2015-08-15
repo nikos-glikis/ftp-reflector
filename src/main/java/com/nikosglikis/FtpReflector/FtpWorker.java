@@ -1,9 +1,12 @@
 package com.nikosglikis.FtpReflector;
 
 import it.sauronsoftware.ftp4j.FTPClient;
+import it.sauronsoftware.ftp4j.FTPConnector;
 import it.sauronsoftware.ftp4j.FTPFile;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
 
 public class FtpWorker  extends Thread
 {
@@ -57,11 +60,13 @@ public class FtpWorker  extends Thread
         }
     }
 
-    public boolean isActive() {
+    public boolean isActive()
+    {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(boolean active)
+    {
         this.active = active;
     }
 
@@ -87,7 +92,6 @@ public class FtpWorker  extends Thread
         {
             die(ftpFile);
         }
-        //TODO download file
     }
 
     public void downloadFile(FtpFile ftpFile, File destinationFile)
@@ -108,7 +112,9 @@ public class FtpWorker  extends Thread
     {
         if (processable.getType() == Processable.TYPES_DIRECTORY) {
             listManager.addDirectory(processable.getPath());
-        } else {
+        }
+        else
+        {
             listManager.addFile(processable.getPath());
         }
         die();
@@ -232,6 +238,7 @@ public class FtpWorker  extends Thread
             ftpClient.connect(host);
             ftpClient.login(username, password);
             ftpClient.setType(FTPClient.TYPE_BINARY);
+
             return true;
         }
         catch (Exception e)
