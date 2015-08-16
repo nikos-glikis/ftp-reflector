@@ -183,7 +183,7 @@ public class FtpWorker  extends Thread
         catch (Exception e)
         {
            // e.printStackTrace();
-           System.out.println("Process Directory error: "+e.toString());
+           System.out.println("Process Directory error. Directory: "+directory.getPath()+"\n Error: "+e.toString());
             //die(directory);
         }
     }
