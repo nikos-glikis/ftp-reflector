@@ -8,6 +8,7 @@ import java.util.ArrayList;
 //TODO maximum threads
 //TODO detect end of files and exit.
 //TODO output directory should be more dynamic according to arguments
+//TODO max increase threads up to a limit.
 
 public class FtpReflector
 {
@@ -37,6 +38,8 @@ public class FtpReflector
                 if (!ftpWorker.ftpClient.isConnected()) {
                     throw new Exception("Cannot connect");
                 }
+
+                //TODO value from parameters
                 int threadLimit = 15;
                 for (int i = 0 ; i < threadLimit; i++) {
                     Thread.sleep(100);
@@ -59,7 +62,7 @@ public class FtpReflector
                         workersCount = getWorkersCountAndRemoveIdle();
                     }
 
-                    System.out.println("Alive workers: " + workersCount + " Pending files: "+ftpWorker.listManager.getPendingCount());
+                    System.out.print("\rAlive workers: " + workersCount + " Pending files: "+ftpWorker.listManager.getPendingCount());
                     Thread.sleep(sleepBetweenThreadChecks*1000);
                 }
             }
