@@ -1,77 +1,64 @@
 package com.nikosglikis.FtpReflector;
 
 import it.sauronsoftware.ftp4j.FTPClient;
-import it.sauronsoftware.ftp4j.FTPFile;
 
 import java.util.ArrayList;
-import java.util.Vector;
 
 //TODO add path in command line
 //TODO maximum threads
 //TODO detect end of files and exit.
+//TODO output directory should be more dynamic according to arguments
+
 public class FtpReflector
 {
     static ArrayList<FtpWorker> workers = new ArrayList<FtpWorker>();
-    static boolean verbose = false;
-    static String outputDirectory = "output";
+
+    /** How often to check for the number of threads.*/
+    static int sleepBetweenThreadChecks;
+
+    static String ftpHost;
+    static String ftpUsername;
+    static String ftpPassword;
+    static String ftpPathToDownload;
+    static int ftpPort;
+
     public static void main(String args[])
     {
-
         try
         {
-            if (args.length != 3)
-            {
-                System.err.println("Usage: java -cp build/:lib/ftp4j-1.7.2.jar com.nikosglikis.FtpReflector.FtpReflector " + "<IpAddress> <UserName> <Password>");
-                System.exit(1);
-            }
+            readArguments(args);
+            readParams();
 
-            // Assignment
-            String ipAddress = args[0];
-            String userName = args[1];
-            String password = args[2];
-
-            System.out.println("Ip Address = " + ipAddress);
-            System.out.println("User = " + userName);
-
-
-            // FTP Program operations start from here
-            FTPClient client = null;
             try
             {
-                client = new FTPClient();
+                FtpWorker ftpWorker = new FtpWorker(ftpHost, ftpUsername, ftpPassword, ftpPort);
+                ftpWorker.prepare(ftpPathToDownload);
 
-                client.setSecurity(FTPClient.SECURITY_FTP);
+                ftpWorker.processDirectory(new FtpDirectory(ftpPathToDownload));
+                ftpWorker.ftpClient.disconnect(true);
+                int threadLimit = 15;
+                for (int i = 0 ; i < threadLimit; i++) {
+                    Thread.sleep(100);
+                    ftpWorker = new FtpWorker(ftpHost, ftpUsername, ftpPassword, ftpPort);
+                    ftpWorker.start();
+                    workers.add(ftpWorker);
+                }
 
-                client.connect(ipAddress);
-
-                client.login(userName, password);
-                client.setPassive(true);
-                client.noop();
-
-                if (client != null)
+                while (true)
                 {
-                    client.disconnect(true);
-                    FtpWorker ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
-                    ftpWorker.processDirectory(new FtpDirectory(""));
-                    ftpWorker.ftpClient.disconnect(true);
-                    int threadLimit = 15;
-                    for (int i = 0 ; i < threadLimit; i++) {
-                        Thread.sleep(100);
-                        ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
-                        ftpWorker.start();
-                        workers.add(ftpWorker);
-                    }
-                    while (true) {
-                        int workersCount = getWorkersCountAndRemoveIdle();
-                        if (workersCount < threadLimit) {
-                            ftpWorker = new FtpWorker(ipAddress, userName, password, outputDirectory, verbose );
+                    int workersCount = getWorkersCountAndRemoveIdle();
+                    if (workersCount < threadLimit)
+                    {
+                        for (int i = workersCount; i < threadLimit; i++)
+                        {
+                            ftpWorker = new FtpWorker(ftpHost, ftpUsername, ftpPassword, ftpPort);
                             ftpWorker.start();
                             workers.add(ftpWorker);
                         }
-                        System.out.println("Alive workers: " + workersCount);
-                        System.out.println("Pending files: "+ftpWorker.listManager.getPendingCount());
-                        Thread.sleep(30000);
+                        workersCount = getWorkersCountAndRemoveIdle();
                     }
+                    System.out.println("Alive workers: " + workersCount + " Pending files: "+ftpWorker.listManager.getPendingCount());
+                    Thread.sleep(sleepBetweenThreadChecks*1000);
                 }
             }
             catch (Exception e)
@@ -97,6 +84,54 @@ public class FtpReflector
         {
             e.printStackTrace();
         }
+    }
+
+    static void readArguments(String args[])
+    {
+        if (args.length < 3)
+        {
+            System.err.println("Usage: java -cp build/:lib/ftp4j-1.7.2.jar com.nikosglikis.FtpReflector.FtpReflector " + "<IpAddress> <UserName> <Password> <port>");
+            System.exit(1);
+        }
+
+        // Assignment
+        ftpHost = args[0];
+        ftpUsername = args[1];
+        ftpPassword = args[2];
+        int port = 21;
+        if (args.length > 3)
+        {
+            ftpPathToDownload = args[3];
+            ftpPathToDownload = FtpReflectorHelper.rTrim(ftpPathToDownload, '/');
+        }
+        else
+        {
+            ftpPathToDownload = "";
+        }
+        ftpPort = 21;
+        if (args.length == 5)
+        {
+            try
+            {
+                ftpPort = Integer.parseInt(args[4]);
+            }
+            catch (Exception e)
+            {
+                ftpPort = 21;
+            }
+
+        }
+
+        System.out.println("Ip Address = " + ftpHost);
+        System.out.println("User = " + ftpUsername);
+    }
+
+    /**
+     * Reads params from parameters.ini and sets global variables.
+     */
+    static void readParams()
+    {
+        sleepBetweenThreadChecks = ParametersReader.getSleepBetweenThreads();
     }
 
     static public int getWorkersCountAndRemoveIdle()

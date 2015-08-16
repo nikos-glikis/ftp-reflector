@@ -7,6 +7,7 @@ import it.sauronsoftware.ftp4j.FTPFile;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.Charset;
 
 public class FtpWorker  extends Thread
 {
@@ -15,30 +16,43 @@ public class FtpWorker  extends Thread
     public static final int STATUS_DOWNLOADING = 2;
 
     static final ListManager listManager = new ListManager();
-    public String username;
-    public String host;
-    public String password;
-    public String outputDirectory;
+    public static String username;
+    public static String host;
+    public static String password;
+    public static String outputDirectory;
+    public static int port;
+
     public FTPClient ftpClient = new FTPClient();
-    public boolean verbose = true;
-    public boolean active = true;
+    public static boolean verbose = true;
+    public static boolean active = true;
     public int status = FtpWorker.STATUS_IDLE;
     private int nullProcessableCounter = 0;
-    public FtpWorker(String host, String username, String password, String outputDirectory)
+
+    public FtpWorker(String host, String username, String password, int port)
     {
         this.host = host;
         this.username = username;
         this.password = password;
-        this.outputDirectory = outputDirectory;
+        this.port = port;
+
         if (!connect()) {
-            active = false;
+            setActive(false);
         }
     }
 
-    public FtpWorker(String host, String username, String password, String outputDirectory, boolean verbose)
+    public void prepare(String ftpDownloadPath)
     {
-        this(host, username, password, outputDirectory);
-        this.verbose  = verbose;
+        verbose = ParametersReader.getVerbose();
+        outputDirectory = ParametersReader.getOutputDirectory();
+        if (ftpDownloadPath.equals(""))
+        {
+            outputDirectory = outputDirectory+"/"+host+"_"+username+"_"+port;
+        }
+        else
+        {
+            outputDirectory = outputDirectory+"/"+host+"_"+username+"_"+port+"/"+ftpDownloadPath;
+        }
+        new File(outputDirectory).mkdirs();
     }
 
     public void process(Processable processable)
@@ -67,6 +81,7 @@ public class FtpWorker  extends Thread
 
     public void setActive(boolean active)
     {
+        //System.out.println("Deactivating");
         this.active = active;
     }
 
@@ -77,7 +92,7 @@ public class FtpWorker  extends Thread
             if (!ftpClient.isConnected()) {
                 die(ftpFile);
             }
-            File destinationFile =  new File(outputDirectory+"/"+host+"/"+ftpFile.getPath() );
+            File destinationFile =  new File(new String(outputDirectory+"/"+ftpFile.getPath()) );
             //TODO date check
             if (destinationFile.exists()) {
                 if (destinationFile.length() != ftpClient.fileSize(ftpFile.getPath())) {
@@ -112,12 +127,16 @@ public class FtpWorker  extends Thread
 
     public void die(Processable processable)
     {
-        if (processable.getType() == Processable.TYPES_DIRECTORY) {
-            listManager.addDirectory(processable.getPath());
-        }
-        else
+        if (processable.getReTries() < 4)
         {
-            listManager.addFile(processable.getPath());
+            if (processable.getType() == Processable.TYPES_DIRECTORY)
+            {
+                listManager.addDirectory(processable.getPath(), processable.getReTries() + 1);
+            }
+            else
+            {
+                listManager.addFile(processable.getPath(), processable.getReTries() + 1);
+            }
         }
         die();
     }
@@ -132,15 +151,22 @@ public class FtpWorker  extends Thread
         {
 
         }
-        active = false;
+        setActive(false);
     }
+
+    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+
+    String decodeUTF8(byte[] bytes) {
+        return new String(bytes, UTF8_CHARSET);
+    }
+
 
     public void processDirectory(FtpDirectory directory)
     {
         try
         {
             String path = directory.getPath();
-            File f = new File(outputDirectory+"/"+host+"/"+directory.getPath());
+            File f = new File(outputDirectory +"/"+directory.getPath());
 
             f.mkdirs();
 
@@ -154,11 +180,13 @@ public class FtpWorker  extends Thread
 
             for (FTPFile file : fileArray)
             {
+                //file = decodeUTF8(file)
                 if (file != null)
                 {
                     if (file.getType() == FTPFile.TYPE_FILE) // File
                     {
                         if (verbose) System.out.println(path + "/" + file.getName());
+
                         listManager.addFile(path + "/" + file.getName());
                     }
                     else if (file.getType() == FTPFile.TYPE_DIRECTORY) // Directory
@@ -189,7 +217,7 @@ public class FtpWorker  extends Thread
             while (true)
             {
                 if (!active) {
-                    //System.out.println("Thread is not active, return");
+
                     ftpClient.disconnect(true);
                     return;
                 }

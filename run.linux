@@ -1,1 +1,1 @@
-java -classpath "build:lib/*" com.nikosglikis.FtpReflector.FtpReflector ip username password
+java -Dfile.encoding=UTF-8 -classpath "build:lib/*" com.nikosglikis.FtpReflector.FtpReflector ip username password

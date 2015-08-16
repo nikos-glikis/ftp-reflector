@@ -8,18 +8,30 @@ public class ListManager
     private Stack<Processable> toBeProcessed = new Stack<Processable>();
     private Stack<Processable> all = new Stack<Processable>();
 
-    public synchronized void addDirectory(String directory)
+    public synchronized void addDirectory(String directory, int retry)
     {
         FtpDirectory ftpDirectory = new FtpDirectory(directory);
+        ftpDirectory.setReTries(retry);
         all.add(ftpDirectory);
         toBeProcessed.add(ftpDirectory);
     }
 
-    public synchronized void addFile(String filePath)
+    public synchronized void addDirectory(String directory)
     {
-        FtpFile ftpDirectory = new FtpFile(filePath);
-        all.add(ftpDirectory);
-        toBeProcessed.add(ftpDirectory);
+        this.addDirectory(directory, 0);
+    }
+
+    public synchronized void addFile(String filePath, int retry)
+    {
+        FtpFile ftpFile = new FtpFile(filePath);
+        ftpFile.setReTries(retry);
+        all.add(ftpFile);
+        toBeProcessed.add(ftpFile);
+    }
+
+    public synchronized void addFile(String directory)
+    {
+        this.addFile(directory, 0);
     }
 
     public synchronized Processable getNext()

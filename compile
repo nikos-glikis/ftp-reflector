@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-javac -d build/ -cp lib/ftp4j-1.7.2.jar src/main/java/com/nikosglikis/FtpReflector/*

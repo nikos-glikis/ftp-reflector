@@ -12,6 +12,7 @@ public class Processable
     String path;
     boolean processed = false;
     protected int type;
+    protected int reTries = 0;
 
     public Processable(String path)
     {
@@ -41,5 +42,13 @@ public class Processable
     public void setPath(String path)
     {
         this.path = path;
+    }
+
+    public int getReTries() {
+        return reTries;
+    }
+
+    public void setReTries(int reTries) {
+        this.reTries = reTries;
     }
 }
