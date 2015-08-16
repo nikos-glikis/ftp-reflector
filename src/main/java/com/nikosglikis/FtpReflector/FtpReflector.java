@@ -33,9 +33,10 @@ public class FtpReflector
             {
                 FtpWorker ftpWorker = new FtpWorker(ftpHost, ftpUsername, ftpPassword, ftpPort);
                 ftpWorker.prepare(ftpPathToDownload);
-
                 ftpWorker.processDirectory(new FtpDirectory(ftpPathToDownload));
-                ftpWorker.ftpClient.disconnect(true);
+                if (!ftpWorker.ftpClient.isConnected()) {
+                    throw new Exception("Cannot connect");
+                }
                 int threadLimit = 15;
                 for (int i = 0 ; i < threadLimit; i++) {
                     Thread.sleep(100);
@@ -57,6 +58,7 @@ public class FtpReflector
                         }
                         workersCount = getWorkersCountAndRemoveIdle();
                     }
+
                     System.out.println("Alive workers: " + workersCount + " Pending files: "+ftpWorker.listManager.getPendingCount());
                     Thread.sleep(sleepBetweenThreadChecks*1000);
                 }

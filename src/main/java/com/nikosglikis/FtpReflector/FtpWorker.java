@@ -14,17 +14,19 @@ public class FtpWorker  extends Thread
 
     public static final int STATUS_IDLE = 1;
     public static final int STATUS_DOWNLOADING = 2;
+    public static final int STATUS_DIED = 3;
 
     static final ListManager listManager = new ListManager();
     public static String username;
     public static String host;
     public static String password;
     public static String outputDirectory;
+
     public static int port;
 
     public FTPClient ftpClient = new FTPClient();
     public static boolean verbose = true;
-    public static boolean active = true;
+
     public int status = FtpWorker.STATUS_IDLE;
     private int nullProcessableCounter = 0;
 
@@ -36,7 +38,7 @@ public class FtpWorker  extends Thread
         this.port = port;
 
         if (!connect()) {
-            setActive(false);
+            setStatusDied();
         }
     }
 
@@ -44,14 +46,7 @@ public class FtpWorker  extends Thread
     {
         verbose = ParametersReader.getVerbose();
         outputDirectory = ParametersReader.getOutputDirectory();
-        if (ftpDownloadPath.equals(""))
-        {
-            outputDirectory = outputDirectory+"/"+host+"_"+username+"_"+port;
-        }
-        else
-        {
-            outputDirectory = outputDirectory+"/"+host+"_"+username+"_"+port+"/"+ftpDownloadPath;
-        }
+        outputDirectory = outputDirectory+"/"+host+"_"+username+"_"+port;
         new File(outputDirectory).mkdirs();
     }
 
@@ -74,17 +69,6 @@ public class FtpWorker  extends Thread
         }
     }
 
-    public boolean isActive()
-    {
-        return active;
-    }
-
-    public void setActive(boolean active)
-    {
-        //System.out.println("Deactivating");
-        this.active = active;
-    }
-
     public void processFile(FtpFile ftpFile)
     {
         try
@@ -105,29 +89,23 @@ public class FtpWorker  extends Thread
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            die(ftpFile);
+            //e.printStackTrace();
+            System.out.println("Error downloading file: " + ftpFile.getPath());
+            //die(ftpFile);
         }
     }
 
-    public void downloadFile(FtpFile ftpFile, File destinationFile)
+    public void downloadFile(FtpFile ftpFile, File destinationFile) throws Exception
     {
-        try
-        {
-            setStatusDownloading();
-            ftpClient.download(ftpFile.getPath(), destinationFile);
-            setStatusIdle();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            die(ftpFile);
-        }
+        setStatusDownloading();
+        ftpClient.download(ftpFile.getPath(), destinationFile);
+        setStatusIdle();
     }
 
     public void die(Processable processable)
     {
-        if (processable.getReTries() < 4)
+        //TODO value in parameters
+        if (processable.getReTries() < 3)
         {
             if (processable.getType() == Processable.TYPES_DIRECTORY)
             {
@@ -151,7 +129,7 @@ public class FtpWorker  extends Thread
         {
 
         }
-        setActive(false);
+        setStatusDied();
     }
 
     private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
@@ -204,9 +182,9 @@ public class FtpWorker  extends Thread
         }
         catch (Exception e)
         {
-            //e.printStackTrace();
-            //System.out.println("Got error, diconnecting ftp client");
-            die(directory);
+           // e.printStackTrace();
+           System.out.println("Process Directory error: "+e.toString());
+            //die(directory);
         }
     }
 
@@ -216,7 +194,7 @@ public class FtpWorker  extends Thread
         {
             while (true)
             {
-                if (!active) {
+                if (!isActive()) {
 
                     ftpClient.disconnect(true);
                     return;
@@ -237,7 +215,8 @@ public class FtpWorker  extends Thread
                         die();
                     }
                     System.out.print("n");
-                    sleep(30000);
+                    //TODO  value in parameters
+                    sleep(5000);
                     continue;
                 }
                 else
@@ -286,6 +265,18 @@ public class FtpWorker  extends Thread
         return status;
     }
 
+    public boolean isActive()
+    {
+        if (getStatus() == FtpWorker.STATUS_DIED)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
     public void setStatusIdle()
     {
         status = FtpWorker.STATUS_IDLE;
@@ -294,5 +285,10 @@ public class FtpWorker  extends Thread
     public void setStatusDownloading()
     {
         status = FtpWorker.STATUS_DOWNLOADING;
+    }
+
+    public void setStatusDied()
+    {
+        status = FtpWorker.STATUS_DIED;
     }
 }

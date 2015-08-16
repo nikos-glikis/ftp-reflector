@@ -1,12 +1,13 @@
 package com.nikosglikis.FtpReflector;
 
+import java.util.LinkedList;
 import java.util.Stack;
 import java.util.Vector;
 
 public class ListManager
 {
-    private Stack<Processable> toBeProcessed = new Stack<Processable>();
-    private Stack<Processable> all = new Stack<Processable>();
+    private LinkedList<Processable> toBeProcessed = new LinkedList<Processable>();
+    private LinkedList<Processable> all = new LinkedList<Processable>();
 
     public synchronized void addDirectory(String directory, int retry)
     {
@@ -39,12 +40,13 @@ public class ListManager
         try
         {
             //TODO what happens in end.
-
-            if (toBeProcessed.size() > 0) {
+            if (toBeProcessed.size() > 0)
+            {
                 Processable processable = toBeProcessed.pop();
-
                 return processable;
-            } else {
+            }
+            else
+            {
                 return null;
             }
         }
