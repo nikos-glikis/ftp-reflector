@@ -12,6 +12,7 @@ public class ParametersReader
     static private String defaultOutputDirectory = "output";
     static private int defaultSleepBetweenThreadChecks = 5;
     static private boolean defaultVerbose = false;
+    static private boolean defaultTorify = false;
 
     public static String getOutputDirectory()
     {
@@ -85,5 +86,28 @@ public class ParametersReader
             //e.printStackTrace();
         }
         return defaultVerbose;
+    }
+
+    public static boolean getTorify()
+    {
+        try
+        {
+            Ini ini = getMainIni();
+
+            String torifyString =  ini.get("FtpReflector", "torify");
+            if (torifyString  == null)
+            {
+                throw new Exception("Value doesn't exist.");
+            }
+            else
+            {
+                return ini.get("FtpReflector", "torify", boolean.class);
+            }
+        }
+        catch (Exception e)
+        {
+            //e.printStackTrace();
+        }
+        return defaultTorify;
     }
 }

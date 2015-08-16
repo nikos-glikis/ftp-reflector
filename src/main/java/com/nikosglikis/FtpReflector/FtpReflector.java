@@ -9,6 +9,7 @@ import java.util.ArrayList;
 //TODO detect end of files and exit.
 //TODO output directory should be more dynamic according to arguments
 //TODO max increase threads up to a limit.
+//TODO comment source
 
 public class FtpReflector
 {
@@ -137,6 +138,13 @@ public class FtpReflector
     static void readParams()
     {
         sleepBetweenThreadChecks = ParametersReader.getSleepBetweenThreads();
+        boolean torify = ParametersReader.getTorify();
+        if (torify)
+        {
+            System.out.println("Torifying");
+            System.setProperty("socksProxyHost", "127.0.0.1");
+            System.setProperty("socksProxyPort", "9050");
+        }
     }
 
     static public int getWorkersCountAndRemoveIdle()
